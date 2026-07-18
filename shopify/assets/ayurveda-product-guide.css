@@ -1,0 +1,993 @@
+/**
+ * Kerala Ayurveda — PDP experience
+ *
+ * Everything is namespaced `.ka-*` so it can sit inside Dawn without fighting
+ * the theme's own styles.
+ *
+ * Motion principle (reference: seed.com's interaction quality, not its visuals):
+ * motion exists to explain a change, never to decorate. Every transition here is
+ * tied to a state change the shopper caused — a selection, a price update, an
+ * answer arriving. Durations stay under 300ms so the page feels quick rather
+ * than animated, and everything collapses under prefers-reduced-motion.
+ */
+
+.ka-pdp {
+  /* Accent is merchant-controlled; the rest of the palette is derived from it. */
+  --ka-ink: #241d16;
+  --ka-ink-soft: #6b6157;
+  --ka-line: #e5ded3;
+  --ka-paper: #fdfbf7;
+  --ka-raise: #ffffff;
+  --ka-success: #2f6b4f;
+  --ka-error: #a8382f;
+  --ka-radius: 14px;
+  --ka-radius-lg: 22px;
+
+  /* Decelerating ease: fast to start, settles softly. Reads as responsive. */
+  --ka-ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --ka-ease-spring: cubic-bezier(0.34, 1.4, 0.64, 1);
+  --ka-fast: 140ms;
+  --ka-base: 220ms;
+
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: clamp(1rem, 3vw, 2.5rem);
+  color: var(--ka-ink);
+  font-family: inherit;
+}
+
+.ka-pdp *,
+.ka-pdp *::before,
+.ka-pdp *::after {
+  box-sizing: border-box;
+}
+
+.ka-placeholder {
+  padding: 3rem;
+  text-align: center;
+  color: #6b6157;
+  background: #faf7f2;
+  border: 1px dashed #d9d0c3;
+  border-radius: 14px;
+}
+
+/* ------------------------------------------------------------------ *
+ * Layout
+ * ------------------------------------------------------------------ */
+.ka-pdp__grid {
+  display: grid;
+  gap: clamp(1.5rem, 4vw, 3.5rem);
+  grid-template-columns: 1fr;
+  align-items: start;
+}
+
+@media (min-width: 900px) {
+  .ka-pdp__grid {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+  /* The buy panel follows the shopper down a tall gallery. */
+  .ka-buy {
+    position: sticky;
+    top: 2rem;
+  }
+}
+
+/* ------------------------------------------------------------------ *
+ * Media
+ * ------------------------------------------------------------------ */
+.ka-media__main {
+  position: relative;
+  overflow: hidden;
+  background: var(--ka-paper);
+  border: 1px solid var(--ka-line);
+  border-radius: var(--ka-radius-lg);
+  aspect-ratio: 4 / 5;
+  transition: opacity var(--ka-fast) var(--ka-ease);
+}
+
+/* Cross-fade on swap so the new image reads as a replacement, not a flicker. */
+.ka-media__main.is-swapping {
+  opacity: 0.35;
+}
+
+.ka-media__img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.ka-media__thumbs {
+  display: flex;
+  gap: 0.6rem;
+  margin: 0.75rem 0 0;
+  padding: 0;
+  list-style: none;
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+
+.ka-media__thumb {
+  width: 72px;
+  height: 72px;
+  padding: 0;
+  overflow: hidden;
+  cursor: pointer;
+  background: none;
+  border: 1px solid var(--ka-line);
+  border-radius: 10px;
+  opacity: 0.6;
+  transition:
+    opacity var(--ka-base) var(--ka-ease),
+    border-color var(--ka-base) var(--ka-ease),
+    transform var(--ka-base) var(--ka-ease);
+}
+
+.ka-media__thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.ka-media__thumb:hover {
+  opacity: 1;
+  transform: translateY(-2px);
+}
+
+.ka-media__thumb.is-active {
+  opacity: 1;
+  border-color: var(--ka-accent);
+}
+
+/* ------------------------------------------------------------------ *
+ * Buy panel
+ * ------------------------------------------------------------------ */
+.ka-buy__eyebrow {
+  margin: 0 0 0.5rem;
+  color: var(--ka-accent);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.ka-buy__title {
+  margin: 0;
+  font-size: clamp(1.75rem, 3.6vw, 2.5rem);
+  font-weight: 500;
+  line-height: 1.12;
+  letter-spacing: -0.02em;
+}
+
+.ka-buy__intro {
+  margin: 0.85rem 0 0;
+  max-width: 46ch;
+  color: var(--ka-ink-soft);
+  font-size: 1rem;
+  line-height: 1.65;
+}
+
+.ka-buy__usage {
+  margin: 1rem 0 0;
+  padding: 0.7rem 0.9rem;
+  color: var(--ka-ink-soft);
+  font-size: 0.85rem;
+  line-height: 1.55;
+  background: var(--ka-paper);
+  border-left: 2px solid var(--ka-accent-soft);
+  border-radius: 0 8px 8px 0;
+}
+
+/* ---- Price ---- */
+.ka-price {
+  display: flex;
+  gap: 0.6rem;
+  align-items: baseline;
+  flex-wrap: wrap;
+  margin: 1.25rem 0 1.5rem;
+}
+
+.ka-price__current {
+  font-size: 1.6rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  font-variant-numeric: tabular-nums;
+}
+
+.ka-price__was {
+  color: var(--ka-ink-soft);
+  font-size: 1rem;
+  opacity: 0.75;
+}
+
+.ka-price__unit {
+  color: var(--ka-ink-soft);
+  font-size: 0.8rem;
+}
+
+/*
+ * A price change is easy to miss. A single short lift draws the eye to the one
+ * number that changed, without turning the whole panel into a light show.
+ */
+.ka-price.is-updated .ka-price__current {
+  animation: ka-price-in 280ms var(--ka-ease);
+}
+
+@keyframes ka-price-in {
+  from {
+    opacity: 0;
+    transform: translateY(-5px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* ---- Options ---- */
+.ka-options {
+  display: grid;
+  gap: 1.15rem;
+  margin-bottom: 1.5rem;
+}
+
+.ka-option {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.ka-option__label {
+  display: flex;
+  gap: 0.4rem;
+  align-items: baseline;
+  margin-bottom: 0.55rem;
+  padding: 0;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ka-ink-soft);
+}
+
+.ka-option__value {
+  color: var(--ka-ink);
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  text-transform: none;
+}
+
+.ka-option__values {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.ka-swatch {
+  position: relative;
+  cursor: pointer;
+}
+
+.ka-swatch input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.ka-swatch__pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.6rem 1rem;
+  font-size: 0.9rem;
+  background: var(--ka-raise);
+  border: 1px solid var(--ka-line);
+  border-radius: 999px;
+  transition:
+    border-color var(--ka-fast) var(--ka-ease),
+    background-color var(--ka-fast) var(--ka-ease),
+    transform var(--ka-fast) var(--ka-ease-spring),
+    color var(--ka-fast) var(--ka-ease);
+}
+
+.ka-swatch:hover .ka-swatch__pill {
+  border-color: var(--ka-accent);
+}
+
+/* The selected pill settles slightly forward — a small, physical confirmation. */
+.ka-swatch input:checked + .ka-swatch__pill {
+  color: var(--ka-accent);
+  background: var(--ka-accent-soft);
+  border-color: var(--ka-accent);
+  transform: scale(1.03);
+}
+
+.ka-swatch input:focus-visible + .ka-swatch__pill {
+  outline: 2px solid var(--ka-accent);
+  outline-offset: 2px;
+}
+
+/* Struck through rather than hidden: the shopper learns what's gone, not that it never existed. */
+.ka-swatch.is-unavailable .ka-swatch__pill {
+  color: var(--ka-ink-soft);
+  text-decoration: line-through;
+  opacity: 0.4;
+}
+
+/* ---- Quantity ---- */
+.ka-qty {
+  margin-bottom: 1rem;
+}
+
+.ka-qty__label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ka-ink-soft);
+}
+
+.ka-qty__control {
+  display: inline-flex;
+  align-items: center;
+  overflow: hidden;
+  background: var(--ka-raise);
+  border: 1px solid var(--ka-line);
+  border-radius: 999px;
+}
+
+.ka-qty__btn {
+  width: 40px;
+  height: 42px;
+  cursor: pointer;
+  background: none;
+  border: 0;
+  color: var(--ka-ink);
+  font-size: 1.05rem;
+  transition: background-color var(--ka-fast) var(--ka-ease);
+}
+
+.ka-qty__btn:hover {
+  background: var(--ka-accent-soft);
+}
+
+.ka-qty__input {
+  width: 46px;
+  height: 42px;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  -moz-appearance: textfield;
+}
+
+.ka-qty__input::-webkit-outer-spin-button,
+.ka-qty__input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* ---- Add to cart ---- */
+.ka-atc,
+.ka-advisor__submit {
+  position: relative;
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 52px;
+  padding: 0.9rem 1.5rem;
+  cursor: pointer;
+  color: #fff;
+  font-size: 0.95rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  background: var(--ka-ink);
+  border: 0;
+  border-radius: 999px;
+  transition:
+    transform var(--ka-fast) var(--ka-ease),
+    background-color var(--ka-base) var(--ka-ease),
+    opacity var(--ka-fast) var(--ka-ease);
+}
+
+.ka-advisor__submit {
+  background: var(--ka-accent);
+}
+
+.ka-atc:hover:not(:disabled),
+.ka-advisor__submit:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+.ka-atc:active:not(:disabled),
+.ka-advisor__submit:active:not(:disabled) {
+  transform: translateY(0) scale(0.99);
+}
+
+.ka-atc:disabled,
+.ka-advisor__submit:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.ka-atc.is-added {
+  background: var(--ka-success);
+  opacity: 1;
+}
+
+.ka-atc__spinner {
+  display: none;
+  width: 15px;
+  height: 15px;
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  border-top-color: #fff;
+  border-radius: 50%;
+}
+
+.ka-atc.is-loading .ka-atc__spinner,
+.ka-advisor__submit.is-loading .ka-atc__spinner {
+  display: block;
+  animation: ka-spin 620ms linear infinite;
+}
+
+.ka-atc.is-loading,
+.ka-advisor__submit.is-loading {
+  cursor: progress;
+}
+
+@keyframes ka-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.ka-form__status {
+  min-height: 1.2rem;
+  margin: 0.6rem 0 0;
+  font-size: 0.85rem;
+}
+
+.ka-form__status.is-success {
+  color: var(--ka-success);
+  animation: ka-fade-up var(--ka-base) var(--ka-ease);
+}
+
+.ka-form__status.is-error {
+  color: var(--ka-error);
+  animation: ka-fade-up var(--ka-base) var(--ka-ease);
+}
+
+/* ---- Trust points ---- */
+.ka-trust {
+  display: grid;
+  gap: 0.75rem;
+  margin: 1.75rem 0 0;
+  padding: 1.15rem;
+  list-style: none;
+  background: var(--ka-paper);
+  border: 1px solid var(--ka-line);
+  border-radius: var(--ka-radius);
+}
+
+.ka-trust__item {
+  display: flex;
+  gap: 0.7rem;
+  align-items: flex-start;
+  font-size: 0.88rem;
+  line-height: 1.5;
+}
+
+.ka-trust__icon {
+  color: var(--ka-accent);
+  line-height: 1.5;
+}
+
+.ka-trust__text {
+  display: block;
+  color: var(--ka-ink-soft);
+}
+
+/* ---- Ingredients ---- */
+.ka-ingredients {
+  margin-top: 1.25rem;
+}
+
+.ka-ingredients__label {
+  margin: 0 0 0.5rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ka-ink-soft);
+}
+
+.ka-ingredients__list {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ka-ingredients__chip {
+  padding: 0.32rem 0.7rem;
+  font-size: 0.8rem;
+  color: var(--ka-ink-soft);
+  background: var(--ka-paper);
+  border: 1px solid var(--ka-line);
+  border-radius: 999px;
+}
+
+/* ------------------------------------------------------------------ *
+ * Advisor
+ * ------------------------------------------------------------------ */
+.ka-advisor {
+  margin-top: clamp(2.5rem, 6vw, 4.5rem);
+  padding: clamp(1.25rem, 3.5vw, 2.5rem);
+  background: var(--ka-paper);
+  border: 1px solid var(--ka-line);
+  border-radius: var(--ka-radius-lg);
+}
+
+.ka-advisor__head {
+  max-width: 58ch;
+  margin-bottom: 1.75rem;
+}
+
+.ka-advisor__title {
+  margin: 0;
+  font-size: clamp(1.4rem, 2.6vw, 1.9rem);
+  font-weight: 500;
+  letter-spacing: -0.015em;
+}
+
+.ka-advisor__sub {
+  margin: 0.6rem 0 0;
+  color: var(--ka-ink-soft);
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
+
+.ka-advisor__form {
+  display: grid;
+  gap: 1.6rem;
+}
+
+.ka-q {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.ka-q__label {
+  display: block;
+  margin-bottom: 0.7rem;
+  padding: 0;
+  font-size: 0.95rem;
+  font-weight: 500;
+}
+
+.ka-q__hint {
+  display: block;
+  margin-top: 0.2rem;
+  color: var(--ka-ink-soft);
+  font-size: 0.82rem;
+  font-weight: 400;
+}
+
+.ka-q__opts {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.ka-q__error {
+  min-height: 1rem;
+  margin: 0.45rem 0 0;
+  color: var(--ka-error);
+  font-size: 0.82rem;
+}
+
+/* A short shake, once — enough to locate the problem, not enough to scold. */
+.ka-q.is-invalid .ka-q__opts {
+  animation: ka-nudge 260ms var(--ka-ease);
+}
+
+@keyframes ka-nudge {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-3px); }
+  75% { transform: translateX(3px); }
+}
+
+.ka-chip {
+  position: relative;
+  cursor: pointer;
+}
+
+.ka-chip input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.ka-chip__face {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.6rem 1rem;
+  font-size: 0.88rem;
+  background: var(--ka-raise);
+  border: 1px solid var(--ka-line);
+  border-radius: 999px;
+  transition:
+    border-color var(--ka-fast) var(--ka-ease),
+    background-color var(--ka-fast) var(--ka-ease),
+    color var(--ka-fast) var(--ka-ease),
+    transform var(--ka-fast) var(--ka-ease-spring);
+}
+
+.ka-chip:hover .ka-chip__face {
+  border-color: var(--ka-accent);
+}
+
+.ka-chip input:checked + .ka-chip__face {
+  color: #fff;
+  background: var(--ka-accent);
+  border-color: var(--ka-accent);
+  transform: scale(1.04);
+}
+
+.ka-chip input:focus-visible + .ka-chip__face {
+  outline: 2px solid var(--ka-accent);
+  outline-offset: 2px;
+}
+
+/* Caution answers shouldn't look like a goal you're proud to pick. */
+.ka-chip--quiet input:checked + .ka-chip__face {
+  color: var(--ka-ink);
+  background: #f3e6d2;
+  border-color: #d8b98a;
+}
+
+.ka-advisor__submit {
+  width: auto;
+  min-width: 220px;
+  justify-self: start;
+}
+
+.ka-advisor__disclaimer {
+  margin: 1.75rem 0 0;
+  padding-top: 1.15rem;
+  max-width: 70ch;
+  color: var(--ka-ink-soft);
+  font-size: 0.78rem;
+  line-height: 1.6;
+  border-top: 1px solid var(--ka-line);
+}
+
+/* ------------------------------------------------------------------ *
+ * Result
+ * ------------------------------------------------------------------ */
+.ka-result {
+  display: none;
+}
+
+.ka-result.is-visible {
+  display: block;
+  margin-top: 1.75rem;
+}
+
+.ka-result__card {
+  padding: clamp(1.15rem, 3vw, 1.85rem);
+  background: var(--ka-raise);
+  border: 1px solid var(--ka-line);
+  border-radius: var(--ka-radius);
+  animation: ka-fade-up var(--ka-base) var(--ka-ease);
+}
+
+@keyframes ka-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.ka-result__head {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  margin-bottom: 0.75rem;
+}
+
+.ka-result__eyebrow {
+  margin: 0;
+  color: var(--ka-accent);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.ka-confidence {
+  padding: 0.28rem 0.65rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  border-radius: 999px;
+  background: #eee9e0;
+  color: var(--ka-ink-soft);
+}
+
+.ka-confidence--strong {
+  background: #e2efe7;
+  color: var(--ka-success);
+}
+
+.ka-confidence--exploratory {
+  background: #f3ece1;
+  color: #8a6d3b;
+}
+
+.ka-result__summary {
+  margin: 0 0 1.25rem;
+  max-width: 62ch;
+  font-size: 1.02rem;
+  line-height: 1.65;
+}
+
+.ka-result__subhead {
+  margin: 1.5rem 0 0.75rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ka-ink-soft);
+}
+
+.ka-result__guidance {
+  margin: 1.25rem 0 0;
+  max-width: 62ch;
+  color: var(--ka-ink-soft);
+  font-size: 0.92rem;
+  line-height: 1.65;
+}
+
+.ka-result__alt {
+  margin: 1rem 0 0;
+  color: var(--ka-ink-soft);
+  font-size: 0.85rem;
+}
+
+/* ---- The pick ---- */
+.ka-pick {
+  padding: 1.1rem;
+  background: var(--ka-paper);
+  border: 1px solid var(--ka-line);
+  border-radius: var(--ka-radius);
+}
+
+.ka-pick__row {
+  display: flex;
+  gap: 1rem;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.ka-pick__row + .ka-pick__why + .ka-pick__row {
+  margin-top: 0.9rem;
+  padding-top: 0.9rem;
+  border-top: 1px solid var(--ka-line);
+}
+
+.ka-pick__label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ka-ink-soft);
+}
+
+.ka-pick__value {
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.ka-pick__why {
+  margin: 0.35rem 0 0;
+  color: var(--ka-ink-soft);
+  font-size: 0.85rem;
+  line-height: 1.55;
+}
+
+/* ---- Routine ---- */
+.ka-routine {
+  display: grid;
+  gap: 0.6rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: ka-step;
+}
+
+/*
+ * Staggered reveal: the routine is a sequence, so it arrives as one. The delay
+ * is capped by the step count (max 4), so it never becomes a wait.
+ */
+.ka-routine__step {
+  display: flex;
+  gap: 0.85rem;
+  align-items: baseline;
+  padding: 0.75rem 0.9rem;
+  background: var(--ka-paper);
+  border-radius: 10px;
+  animation: ka-fade-up var(--ka-base) var(--ka-ease) backwards;
+  animation-delay: calc(var(--i) * 55ms);
+}
+
+.ka-routine__when {
+  flex-shrink: 0;
+  min-width: 90px;
+  color: var(--ka-accent);
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.ka-routine__what {
+  font-size: 0.9rem;
+  line-height: 1.55;
+}
+
+/* ---- Cautions ---- */
+.ka-consult {
+  margin-bottom: 1.25rem;
+  padding: 1rem 1.15rem;
+  background: #fdf4e3;
+  border: 1px solid #e8cf9f;
+  border-radius: var(--ka-radius);
+}
+
+.ka-consult__title {
+  margin: 0 0 0.35rem;
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: #7a5722;
+}
+
+.ka-consult p {
+  margin: 0;
+  color: #6f5227;
+  font-size: 0.88rem;
+  line-height: 1.6;
+}
+
+.ka-consult__link {
+  display: inline-block;
+  margin-top: 0.7rem;
+  color: #7a5722;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-underline-offset: 3px;
+}
+
+.ka-notes {
+  margin: 1.25rem 0 0;
+  padding: 0.85rem 1rem 0.85rem 2rem;
+  color: var(--ka-ink-soft);
+  font-size: 0.82rem;
+  line-height: 1.6;
+  background: var(--ka-paper);
+  border-radius: 10px;
+}
+
+.ka-notes li + li {
+  margin-top: 0.4rem;
+}
+
+/* ---- Error ---- */
+.ka-result__card--error {
+  background: #fdf3f2;
+  border-color: #edc9c5;
+}
+
+.ka-result__errorTitle {
+  margin: 0 0 0.3rem;
+  color: var(--ka-error);
+  font-weight: 600;
+}
+
+.ka-result__card--error p {
+  margin: 0;
+  color: #7d3b35;
+  font-size: 0.9rem;
+}
+
+.ka-result__retry {
+  margin-top: 0.85rem;
+  padding: 0.5rem 1.1rem;
+  cursor: pointer;
+  color: var(--ka-error);
+  font-size: 0.85rem;
+  font-weight: 600;
+  background: none;
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  transition: background-color var(--ka-fast) var(--ka-ease);
+}
+
+.ka-result__retry:hover {
+  background: #f8e6e4;
+}
+
+/* ---- Skeleton ---- */
+/*
+ * A skeleton in the shape of the answer, not a spinner: the shopper sees the
+ * result taking form where it will actually appear, which reads as faster than
+ * the same wait behind a spinner.
+ */
+.ka-skeleton__line,
+.ka-skeleton__box {
+  border-radius: 6px;
+  background: linear-gradient(90deg, #efe9e0 25%, #f7f3ec 50%, #efe9e0 75%);
+  background-size: 200% 100%;
+  animation: ka-shimmer 1.3s ease-in-out infinite;
+}
+
+.ka-skeleton__line {
+  height: 12px;
+  margin-bottom: 0.75rem;
+}
+
+.ka-skeleton__box {
+  height: 92px;
+  margin-top: 1.25rem;
+  border-radius: 10px;
+}
+
+@keyframes ka-shimmer {
+  from { background-position: 200% 0; }
+  to { background-position: -200% 0; }
+}
+
+/* ------------------------------------------------------------------ *
+ * Reduced motion
+ * ------------------------------------------------------------------ */
+@media (prefers-reduced-motion: reduce) {
+  .ka-pdp *,
+  .ka-pdp *::before,
+  .ka-pdp *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  /* The spinner still needs to read as "working", so keep it turning slowly. */
+  .ka-atc.is-loading .ka-atc__spinner,
+  .ka-advisor__submit.is-loading .ka-atc__spinner {
+    animation: ka-spin 1.2s linear infinite !important;
+  }
+
+  .ka-swatch input:checked + .ka-swatch__pill,
+  .ka-chip input:checked + .ka-chip__face {
+    transform: none;
+  }
+}

@@ -1,0 +1,505 @@
+{% comment %}
+  Kerala Ayurveda — PDP experience
+  ---------------------------------
+  A complete product section: media gallery, variant-aware pricing, native
+  add-to-cart, merchant-editable trust blocks, and the "Is this right for me?"
+  advisor.
+
+  Install: drop into `sections/` of a Dawn-based theme and add it to the product
+  template via the Theme Editor. Full instructions in docs/MERCHANT-GUIDE.md.
+
+  Merchant configuration:
+    - Section settings (below) cover copy, accent colour, and the advisor toggle.
+    - Trust points are blocks, so they can be added/reordered/removed.
+    - Product-specific content comes from metafields (docs/METAFIELDS.md), so the
+      same section works across products without duplicating it per product.
+
+  Everything degrades: with JS off, the native product form still adds to cart
+  and the advisor hides itself rather than showing a dead panel.
+{% endcomment %}
+
+{{ 'ayurveda-product-guide.css' | asset_url | stylesheet_tag }}
+
+{%- liquid
+  assign product = section.settings.product | default: product
+  assign current_variant = product.selected_or_first_available_variant
+
+  # Product-specific copy lives in metafields so one section serves every product.
+  assign advisor_intro = product.metafields.custom.advisor_intro.value
+  assign usage_note = product.metafields.custom.usage_note.value
+  assign key_ingredients = product.metafields.custom.key_ingredients.value
+
+  assign show_advisor = section.settings.show_advisor
+  if product == blank
+    assign show_advisor = false
+  endif
+-%}
+
+{%- if product == blank -%}
+  {%- comment -%} Theme Editor safety: the section may be added before a product is picked. {%- endcomment -%}
+  <div class="ka-placeholder">
+    {{ 'onboarding.product_title' | t | default: 'Select a product in the Theme Editor to preview this section.' }}
+  </div>
+{%- else -%}
+
+<section
+  class="ka-pdp"
+  data-ka-pdp
+  style="--ka-accent: {{ section.settings.accent_color }}; --ka-accent-soft: {{ section.settings.accent_color | color_modify: 'alpha', 0.12 }};"
+>
+  <div class="ka-pdp__grid">
+
+    {%- comment -%} ---------- Media gallery ---------- {%- endcomment -%}
+    <div class="ka-media">
+      <div class="ka-media__main" data-ka-media-main>
+        {%- if product.featured_media -%}
+          {{
+            product.featured_media
+            | image_url: width: 1400
+            | image_tag:
+              loading: 'eager',
+              fetchpriority: 'high',
+              widths: '400, 600, 800, 1000, 1200, 1400',
+              sizes: '(min-width: 990px) 46vw, 100vw',
+              class: 'ka-media__img',
+              alt: product.featured_media.alt | default: product.title | escape
+          }}
+        {%- else -%}
+          {{ 'product-1' | placeholder_svg_tag: 'ka-media__img ka-media__img--placeholder' }}
+        {%- endif -%}
+      </div>
+
+      {%- if product.media.size > 1 -%}
+        <ul class="ka-media__thumbs" role="list">
+          {%- for media in product.media limit: 5 -%}
+            <li>
+              <button
+                type="button"
+                class="ka-media__thumb{% if forloop.first %} is-active{% endif %}"
+                data-ka-thumb
+                data-media-index="{{ forloop.index0 }}"
+                aria-label="{{ 'products.product.media.gallery_viewer' | t | default: 'View image' }} {{ forloop.index }}"
+              >
+                {{
+                  media
+                  | image_url: width: 200
+                  | image_tag: loading: 'lazy', widths: '100, 200', sizes: '80px', alt: media.alt | escape
+                }}
+              </button>
+            </li>
+          {%- endfor -%}
+        </ul>
+      {%- endif -%}
+    </div>
+
+    {%- comment -%} ---------- Buy panel ---------- {%- endcomment -%}
+    <div class="ka-buy">
+      {%- if product.metafields.custom.eyebrow.value != blank -%}
+        <p class="ka-buy__eyebrow">{{ product.metafields.custom.eyebrow.value | escape }}</p>
+      {%- endif -%}
+
+      <h1 class="ka-buy__title">{{ product.title | escape }}</h1>
+
+      {%- if advisor_intro != blank -%}
+        <p class="ka-buy__intro">{{ advisor_intro | escape }}</p>
+      {%- endif -%}
+
+      <div class="ka-price" data-ka-price>
+        <span class="ka-price__current" data-ka-price-current>{{ current_variant.price | money }}</span>
+        {%- if current_variant.compare_at_price > current_variant.price -%}
+          <s class="ka-price__was" data-ka-price-was>{{ current_variant.compare_at_price | money }}</s>
+        {%- else -%}
+          <s class="ka-price__was" data-ka-price-was hidden></s>
+        {%- endif -%}
+        <span class="ka-price__unit" data-ka-price-unit>
+          {%- if current_variant.unit_price_measurement -%}
+            {{ current_variant.unit_price | money }} / {{ current_variant.unit_price_measurement.reference_value }}{{ current_variant.unit_price_measurement.reference_unit }}
+          {%- endif -%}
+        </span>
+      </div>
+
+      {%- comment -%}
+        Real Shopify variant selection: options are rendered from the product's
+        own option set, so this works for any product regardless of how the
+        merchant named or structured its options.
+      {%- endcomment -%}
+      {%- unless product.has_only_default_variant -%}
+        <div class="ka-options">
+          {%- for option in product.options_with_values -%}
+            <fieldset class="ka-option" data-ka-option-index="{{ forloop.index0 }}">
+              <legend class="ka-option__label">
+                {{ option.name | escape }}
+                <span class="ka-option__value" data-ka-option-selected="{{ forloop.index0 }}">
+                  {{- option.selected_value | escape -}}
+                </span>
+              </legend>
+              <div class="ka-option__values">
+                {%- for value in option.values -%}
+                  <label class="ka-swatch">
+                    <input
+                      type="radio"
+                      name="ka-option-{{ section.id }}-{{ option.position }}"
+                      value="{{ value | escape }}"
+                      data-ka-option-input
+                      data-option-position="{{ option.position }}"
+                      {% if option.selected_value == value %}checked{% endif %}
+                    >
+                    <span class="ka-swatch__pill">{{ value | escape }}</span>
+                  </label>
+                {%- endfor -%}
+              </div>
+            </fieldset>
+          {%- endfor -%}
+        </div>
+      {%- endunless -%}
+
+      {%- comment -%}
+        Native Shopify product form. JS upgrades it to an AJAX add, but the plain
+        form submit remains the fallback if JS never runs.
+      {%- endcomment -%}
+      {%- form 'product', product, id: 'ka-form', class: 'ka-form', novalidate: 'novalidate' -%}
+        <input type="hidden" name="id" value="{{ current_variant.id }}" data-ka-variant-id>
+
+        <div class="ka-qty">
+          <label class="ka-qty__label" for="ka-qty-{{ section.id }}">
+            {{ 'products.product.quantity.label' | t | default: 'Quantity' }}
+          </label>
+          <div class="ka-qty__control">
+            <button type="button" class="ka-qty__btn" data-ka-qty-down aria-label="Decrease quantity">&minus;</button>
+            <input
+              class="ka-qty__input"
+              id="ka-qty-{{ section.id }}"
+              type="number"
+              name="quantity"
+              value="1"
+              min="1"
+              inputmode="numeric"
+              data-ka-qty-input
+            >
+            <button type="button" class="ka-qty__btn" data-ka-qty-up aria-label="Increase quantity">+</button>
+          </div>
+        </div>
+
+        <button
+          type="submit"
+          name="add"
+          class="ka-atc"
+          data-ka-atc
+          {% unless current_variant.available %}disabled{% endunless %}
+        >
+          <span class="ka-atc__label" data-ka-atc-label>
+            {%- if current_variant.available -%}
+              {{ section.settings.cta_label | escape }}
+            {%- else -%}
+              {{ 'products.product.sold_out' | t | default: 'Sold out' }}
+            {%- endif -%}
+          </span>
+          <span class="ka-atc__spinner" aria-hidden="true"></span>
+        </button>
+
+        <p class="ka-form__status" data-ka-atc-status role="status" aria-live="polite"></p>
+      {%- endform -%}
+
+      {%- if usage_note != blank -%}
+        <p class="ka-buy__usage">{{ usage_note | escape }}</p>
+      {%- endif -%}
+
+      {%- comment -%} Merchant-managed trust points, reorderable as blocks. {%- endcomment -%}
+      {%- if section.blocks.size > 0 -%}
+        <ul class="ka-trust" role="list">
+          {%- for block in section.blocks -%}
+            {%- case block.type -%}
+              {%- when 'benefit' -%}
+                <li class="ka-trust__item" {{ block.shopify_attributes }}>
+                  <span class="ka-trust__icon" aria-hidden="true">{{ block.settings.icon | escape }}</span>
+                  <span>
+                    <strong>{{ block.settings.title | escape }}</strong>
+                    {%- if block.settings.text != blank -%}
+                      <span class="ka-trust__text">{{ block.settings.text | escape }}</span>
+                    {%- endif -%}
+                  </span>
+                </li>
+            {%- endcase -%}
+          {%- endfor -%}
+        </ul>
+      {%- endif -%}
+
+      {%- if key_ingredients != blank -%}
+        <div class="ka-ingredients">
+          <p class="ka-ingredients__label">{{ section.settings.ingredients_label | escape }}</p>
+          <ul class="ka-ingredients__list" role="list">
+            {%- for ingredient in key_ingredients -%}
+              <li class="ka-ingredients__chip">{{ ingredient | escape }}</li>
+            {%- endfor -%}
+          </ul>
+        </div>
+      {%- endif -%}
+    </div>
+  </div>
+
+  {%- comment -%} ---------- Advisor ---------- {%- endcomment -%}
+  {%- if show_advisor -%}
+    <div
+      class="ka-advisor"
+      data-ka-advisor
+      data-endpoint="{{ section.settings.api_endpoint }}"
+      data-consult-url="{{ section.settings.consult_url }}"
+    >
+      <header class="ka-advisor__head">
+        <h2 class="ka-advisor__title">{{ section.settings.heading | escape }}</h2>
+        <p class="ka-advisor__sub">{{ section.settings.subheading | escape }}</p>
+      </header>
+
+      <form class="ka-advisor__form" data-ka-advisor-form novalidate>
+        <fieldset class="ka-q" data-ka-question>
+          <legend class="ka-q__label">
+            What are you hoping to support?
+            <span class="ka-q__hint">Pick one or two — fewer answers give a sharper result.</span>
+          </legend>
+          <div class="ka-q__opts ka-q__opts--wrap">
+            {%- assign goals = 'stress|Everyday stress,sleep|Restful sleep,energy|Steady energy,focus|Focus and clarity,immunity|Everyday immunity' | split: ',' -%}
+            {%- for goal in goals -%}
+              {%- assign parts = goal | split: '|' -%}
+              <label class="ka-chip">
+                <input type="checkbox" name="goals" value="{{ parts[0] }}">
+                <span class="ka-chip__face">{{ parts[1] }}</span>
+              </label>
+            {%- endfor -%}
+          </div>
+          <p class="ka-q__error" data-ka-error="goals" role="alert"></p>
+        </fieldset>
+
+        <fieldset class="ka-q" data-ka-question>
+          <legend class="ka-q__label">Have you taken ashwagandha before?</legend>
+          <div class="ka-q__opts">
+            {%- assign levels = 'new|First time,occasional|On and off,experienced|Regularly' | split: ',' -%}
+            {%- for level in levels -%}
+              {%- assign parts = level | split: '|' -%}
+              <label class="ka-chip">
+                <input type="radio" name="experience" value="{{ parts[0] }}">
+                <span class="ka-chip__face">{{ parts[1] }}</span>
+              </label>
+            {%- endfor -%}
+          </div>
+          <p class="ka-q__error" data-ka-error="experience" role="alert"></p>
+        </fieldset>
+
+        <fieldset class="ka-q" data-ka-question>
+          <legend class="ka-q__label">
+            When would you take it?
+            <span class="ka-q__hint">Optional — we'll work it out from your goals.</span>
+          </legend>
+          <div class="ka-q__opts">
+            {%- assign timings = 'morning|Morning,evening|Evening,flexible|Not sure' | split: ',' -%}
+            {%- for timing in timings -%}
+              {%- assign parts = timing | split: '|' -%}
+              <label class="ka-chip">
+                <input type="radio" name="timing" value="{{ parts[0] }}">
+                <span class="ka-chip__face">{{ parts[1] }}</span>
+              </label>
+            {%- endfor -%}
+          </div>
+        </fieldset>
+
+        <fieldset class="ka-q" data-ka-question>
+          <legend class="ka-q__label">
+            Anything we should know?
+            <span class="ka-q__hint">Optional. This changes what we suggest.</span>
+          </legend>
+          <div class="ka-q__opts ka-q__opts--wrap">
+            {%- assign cautions = 'pregnant_or_nursing|Pregnant or nursing,taking_medication|Taking medication,thyroid_condition|Managing a thyroid condition' | split: ',' -%}
+            {%- for caution in cautions -%}
+              {%- assign parts = caution | split: '|' -%}
+              <label class="ka-chip ka-chip--quiet">
+                <input type="checkbox" name="cautions" value="{{ parts[0] }}">
+                <span class="ka-chip__face">{{ parts[1] }}</span>
+              </label>
+            {%- endfor -%}
+          </div>
+        </fieldset>
+
+        <button type="submit" class="ka-advisor__submit" data-ka-advisor-submit>
+          <span data-ka-advisor-submit-label>{{ section.settings.advisor_cta | escape }}</span>
+          <span class="ka-atc__spinner" aria-hidden="true"></span>
+        </button>
+      </form>
+
+      {%- comment -%} Result, empty, and error states are all rendered by JS into here. {%- endcomment -%}
+      <div class="ka-result" data-ka-result aria-live="polite"></div>
+
+      <p class="ka-advisor__disclaimer">{{ section.settings.disclaimer | escape }}</p>
+    </div>
+  {%- endif -%}
+
+  {%- comment -%}
+    Variant data for client-side option → variant resolution.
+
+    Prices are pre-formatted through the `money` filter rather than sent as raw
+    cents: Shopify already knows the shop's currency and format, and re-deriving
+    that in JS is how storefronts end up showing "$1,299.00" as "$1299".
+  {%- endcomment -%}
+  <script type="application/json" data-ka-variants>
+    [
+      {%- for variant in product.variants -%}
+        {
+          "id": {{ variant.id }},
+          "options": {{ variant.options | json }},
+          "available": {{ variant.available }},
+          "price": {{ variant.price | money | json }},
+          "compareAtPrice": {% if variant.compare_at_price > variant.price %}{{ variant.compare_at_price | money | json }}{% else %}null{% endif %},
+          "unitPrice": {% if variant.unit_price_measurement %}{{ variant.unit_price | money | append: ' / ' | append: variant.unit_price_measurement.reference_value | append: variant.unit_price_measurement.reference_unit | json }}{% else %}null{% endif %}
+        }{%- unless forloop.last -%},{%- endunless -%}
+      {%- endfor -%}
+    ]
+  </script>
+</section>
+
+<script src="{{ 'ayurveda-product-guide.js' | asset_url }}" defer></script>
+{%- endif -%}
+
+{% schema %}
+{
+  "name": "Ayurveda PDP",
+  "tag": "section",
+  "class": "ka-section",
+  "settings": [
+    {
+      "type": "product",
+      "id": "product",
+      "label": "Product",
+      "info": "Leave empty on a product template to use the current product."
+    },
+    {
+      "type": "header",
+      "content": "Buy panel"
+    },
+    {
+      "type": "text",
+      "id": "cta_label",
+      "label": "Add to cart label",
+      "default": "Add to cart"
+    },
+    {
+      "type": "text",
+      "id": "ingredients_label",
+      "label": "Ingredients label",
+      "default": "Inside"
+    },
+    {
+      "type": "color",
+      "id": "accent_color",
+      "label": "Accent colour",
+      "default": "#8a5a2b"
+    },
+    {
+      "type": "header",
+      "content": "\"Is this right for me?\" advisor"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_advisor",
+      "label": "Show the advisor",
+      "default": true
+    },
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "Advisor heading",
+      "default": "Is this right for me?"
+    },
+    {
+      "type": "textarea",
+      "id": "subheading",
+      "label": "Advisor subheading",
+      "default": "Four quick questions. We'll suggest a pack size, a format and a daily routine built around what you're actually after."
+    },
+    {
+      "type": "text",
+      "id": "advisor_cta",
+      "label": "Advisor button label",
+      "default": "Show my routine"
+    },
+    {
+      "type": "url",
+      "id": "consult_url",
+      "label": "\"Speak to a practitioner\" link",
+      "info": "Shown when a shopper flags pregnancy or a thyroid condition."
+    },
+    {
+      "type": "textarea",
+      "id": "disclaimer",
+      "label": "Disclaimer",
+      "default": "This guide supports your own research. It is not medical advice and does not diagnose or treat any condition. If you are pregnant, nursing, managing a health condition or taking medication, please speak with a qualified practitioner."
+    },
+    {
+      "type": "header",
+      "content": "Advisor API"
+    },
+    {
+      "type": "text",
+      "id": "api_endpoint",
+      "label": "Recommendation endpoint",
+      "default": "/apps/ayurveda/recommendation",
+      "info": "Use the App Proxy path (recommended) or the full URL of your deployed API."
+    }
+  ],
+  "blocks": [
+    {
+      "type": "benefit",
+      "name": "Trust point",
+      "limit": 6,
+      "settings": [
+        {
+          "type": "text",
+          "id": "icon",
+          "label": "Icon",
+          "default": "✦",
+          "info": "A single character or emoji."
+        },
+        {
+          "type": "text",
+          "id": "title",
+          "label": "Title",
+          "default": "Third-party tested"
+        },
+        {
+          "type": "text",
+          "id": "text",
+          "label": "Supporting text"
+        }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "Ayurveda PDP",
+      "blocks": [
+        {
+          "type": "benefit",
+          "settings": {
+            "icon": "✦",
+            "title": "Rooted in classical Ayurveda",
+            "text": "Formulated to traditional preparation methods."
+          }
+        },
+        {
+          "type": "benefit",
+          "settings": {
+            "icon": "◈",
+            "title": "Third-party tested",
+            "text": "Every batch checked for heavy metals and pesticides."
+          }
+        },
+        {
+          "type": "benefit",
+          "settings": {
+            "icon": "◇",
+            "title": "No added fillers",
+            "text": "Ashwagandha root and nothing you didn't ask for."
+          }
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}
