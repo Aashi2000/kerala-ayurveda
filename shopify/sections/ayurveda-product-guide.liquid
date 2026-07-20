@@ -38,7 +38,7 @@
 {%- if product == blank -%}
   {%- comment -%} Theme Editor safety: the section may be added before a product is picked. {%- endcomment -%}
   <div class="ka-placeholder">
-    {{ 'onboarding.product_title' | t | default: 'Select a product in the Theme Editor to preview this section.' }}
+    Select a product in the Theme Editor to preview this section.
   </div>
 {%- else -%}
 
@@ -78,7 +78,7 @@
                 class="ka-media__thumb{% if forloop.first %} is-active{% endif %}"
                 data-ka-thumb
                 data-media-index="{{ forloop.index0 }}"
-                aria-label="{{ 'products.product.media.gallery_viewer' | t | default: 'View image' }} {{ forloop.index }}"
+                aria-label="View image {{ forloop.index }}"
               >
                 {{
                   media
@@ -162,7 +162,7 @@
 
         <div class="ka-qty">
           <label class="ka-qty__label" for="ka-qty-{{ section.id }}">
-            {{ 'products.product.quantity.label' | t | default: 'Quantity' }}
+            Quantity
           </label>
           <div class="ka-qty__control">
             <button type="button" class="ka-qty__btn" data-ka-qty-down aria-label="Decrease quantity">&minus;</button>
@@ -191,7 +191,7 @@
             {%- if current_variant.available -%}
               {{ section.settings.cta_label | escape }}
             {%- else -%}
-              {{ 'products.product.sold_out' | t | default: 'Sold out' }}
+              Sold out
             {%- endif -%}
           </span>
           <span class="ka-atc__spinner" aria-hidden="true"></span>
