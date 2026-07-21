@@ -250,6 +250,18 @@ Also: `tsc --noEmit` clean; the `{% schema %}` block parsed as JSON (a malformed
 
 ---
 
+## Limitations
+
+- **Checkout is disabled on the demo.** The dev store has no paid plan, so Shopify blocks the checkout step ("This store isn't set up to receive orders yet"). Add-to-cart works and the item enters the real cart — only the final checkout is gated. This is a Shopify dev-store constraint, not a code issue.
+- **Install step: remove the theme's default product section.** The section is a full PDP (hero + buy panel + advisor). On a product template that already has the theme's built-in product section, remove it so there aren't two buy panels competing for add-to-cart. Documented in the merchant guide.
+- **Product metafields are optional and must be created once.** The section reads `custom.eyebrow`, `custom.advisor_intro`, `custom.usage_note`, `custom.key_ingredients`; empty ones are hidden by design, so the page is complete without them. They add product-specific copy when set (see `docs/METAFIELDS.md`).
+- **One product.** Ashwagandha only; the engine's catalogue and goal vocabulary are product-specific (see Tradeoffs).
+- **`variantSku` is not yet mapped to a live variant ID**, so the recommended pack is shown, not auto-selected in the buy panel. A future enhancement.
+- **No rate limiting or analytics** on the API.
+- **Prices, pack sizes and the 56-day course constant are illustrative**, not sourced from Kerala Ayurveda's catalogue (see Real vs. mocked).
+
+---
+
 ## Tradeoffs
 
 **Rebuilt rather than converted.** A working React PDP existed. I deleted it. It had a static lookup behind the API, a `setTimeout` add-to-cart, and a stub Liquid file — it demoed well and was the wrong thing, on the two points the brief is most explicit about. Converting it would have carried the mock's assumptions (a hard-coded two-variant array) into the theme. The Liquid was written natively; the React version served as a spec.
