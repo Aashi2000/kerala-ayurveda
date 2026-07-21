@@ -4,8 +4,8 @@ An "Is this right for me?" advisor on an Ashwagandha product page: four question
 
 The product page is **a real Shopify theme section**. The recommendation is **a real scoring engine behind an API**. Neither is a mock-up of the other.
 
-- **Demo:** _(add your dev store product URL)_
-- **API harness:** _(add your Vercel URL)_ — a test surface for the API, not the product
+- **Demo:** https://eewiww-cw.myshopify.com/products/ashwagandha — storefront password: `temick`
+- **API harness:** https://kerala-ayurveda-eight.vercel.app — a test surface for the API, not the product
 - **Walkthrough:** _(add your Loom link)_
 - **AI usage note:** [AI-USAGE.md](./AI-USAGE.md)
 
