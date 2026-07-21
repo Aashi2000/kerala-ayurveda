@@ -197,6 +197,35 @@
   /* ------------------------------------------------------------------ *
    * Add to cart
    * ------------------------------------------------------------------ */
+  /**
+   * Reflect a successful add in whatever cart UI the theme provides.
+   * Dawn-family themes expose renderContents() on their cart element (which
+   * repaints the drawer + header bubble and opens the drawer); anything else
+   * falls back to refreshing a header count and a generic refresh event.
+   */
+  function updateThemeCart(cartEl, addResponse) {
+    try {
+      if (cartEl && typeof cartEl.renderContents === 'function' && addResponse && addResponse.sections) {
+        cartEl.renderContents(addResponse);
+        return;
+      }
+    } catch (e) { /* fall through to the generic refresh */ }
+
+    refreshCartCount();
+    document.dispatchEvent(new CustomEvent('cart:refresh', { bubbles: true }));
+  }
+
+  /** Best-effort header cart-count update for themes without a cart element. */
+  function refreshCartCount() {
+    fetch('/cart.js', { headers: { Accept: 'application/json' } })
+      .then(function (response) { return response.json(); })
+      .then(function (cart) {
+        var nodes = document.querySelectorAll('.cart-count-bubble span:first-child, [data-cart-count], .cart-count');
+        for (var i = 0; i < nodes.length; i++) nodes[i].textContent = cart.item_count;
+      })
+      .catch(function () { /* non-critical: the inline success message still shows */ });
+  }
+
   function initAddToCart(root) {
     var form = $('[data-ka-atc]', root) ? $('#ka-form', root) || $('form', root) : null;
     var button = $('[data-ka-atc]', root);
@@ -218,10 +247,23 @@
         status.className = 'ka-form__status';
       }
 
+      // Dawn-family themes expose a <cart-drawer> / <cart-notification> element.
+      // When present, ask Shopify to re-render its sections in the same request
+      // so the drawer and header bubble update in place — no reload needed.
+      var cartEl = document.querySelector('cart-drawer') || document.querySelector('cart-notification');
+      var formData = new FormData(form);
+      if (cartEl && typeof cartEl.getSectionsToRender === 'function') {
+        try {
+          var ids = cartEl.getSectionsToRender().map(function (section) { return section.id; });
+          formData.append('sections', ids.join(','));
+          formData.append('sections_url', window.location.pathname);
+        } catch (e) { /* fall back to a plain add */ }
+      }
+
       fetch('/cart/add.js', {
         method: 'POST',
         headers: { Accept: 'application/json' },
-        body: new FormData(form),
+        body: formData,
       })
         .then(function (response) {
           return response.json().then(function (body) {
@@ -229,7 +271,7 @@
             return body;
           });
         })
-        .then(function () {
+        .then(function (body) {
           button.classList.remove('is-loading');
           button.classList.add('is-added');
           if (label) label.textContent = 'Added';
@@ -237,8 +279,7 @@
             status.textContent = 'Added to your cart.';
             status.className = 'ka-form__status is-success';
           }
-          // Let the theme's cart drawer / bubble update itself.
-          document.dispatchEvent(new CustomEvent('cart:refresh', { bubbles: true }));
+          updateThemeCart(cartEl, body);
 
           resetTimer = window.setTimeout(function () {
             button.classList.remove('is-added');
